@@ -17,63 +17,48 @@ jobs:
     timeout-minutes: 90
 
     steps:
-      # 1. Download project
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 2. Install Python
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.10"
-          cache: pip
 
-      # 3. Install Java
       - name: Set up Java
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: "17"
 
-      # 4. Install system dependencies
-      - name: Install build dependencies
+      - name: Install system dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y \
             git zip unzip \
             autoconf automake libtool \
-            pkg-config \
-            zlib1g-dev \
-            libncurses5-dev \
-            libncursesw5-dev \
-            libtinfo6 \
-            cmake \
-            libffi-dev \
-            libssl-dev \
-            libltdl-dev \
-            build-essential
+            pkg-config zlib1g-dev \
+            libncurses5-dev libncursesw5-dev \
+            cmake libffi-dev libssl-dev \
+            libltdl-dev build-essential
 
-      # 5. Install Buildozer
       - name: Install Buildozer
         run: |
           python -m pip install --upgrade pip setuptools wheel
           python -m pip install "Cython==0.29.36"
           python -m pip install buildozer
 
-      # 6. Verify configuration
-      - name: Check Buildozer
+      - name: Check project
         run: |
-          buildozer --version
+          ls -la
           test -f buildozer.spec
+          buildozer --version
 
-      # 7. Build APK
       - name: Build LT-Music APK
         run: |
-          yes | buildozer android debug || true
           buildozer android debug
 
-      # 8. Upload generated APK
-      - name: Upload APK artifact
+      - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: LT-Music-APK
