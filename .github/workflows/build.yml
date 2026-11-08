@@ -1,25 +1,93 @@
 
-      - name: Clean previous Android build
+name: Build LT-Music APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build Android APK
+    runs-on: ubuntu-22.04
+    timeout-minutes: 90
+
+    steps:
+      # Checkout project
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Install Python
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      # Install Java
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      # Install Linux dependencies
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            git zip unzip \
+            autoconf automake libtool \
+            pkg-config zlib1g-dev \
+            libncurses5-dev libncursesw5-dev \
+            cmake libffi-dev libssl-dev \
+            libltdl-dev build-essential
+
+      # Install Buildozer
+      - name: Install Buildozer
+        run: |
+          python -m pip install --upgrade pip setuptools wheel
+          python -m pip install "Cython==0.29.36"
+          python -m pip install buildozer
+
+      # Verify files
+      - name: Check project
+        run: |
+          echo "Checking project files..."
+          ls -la
+          test -f main.py
+          test -f buildozer.spec
+          buildozer --version
+
+      # Clean previous build
+      - name: Clean Android build
         run: |
           buildozer android clean
 
+      # Build APK
       - name: Build LT-Music APK
         run: |
           set -o pipefail
           buildozer -v android debug 2>&1 | tee build.log
 
+      # Save logs even if build fails
       - name: Upload build logs
-        if: always()
+        if: ${{ always() }}
         uses: actions/upload-artifact@v4
         with:
           name: LT-Music-Build-Logs
           path: build.log
           if-no-files-found: ignore
 
+      # Upload APK
       - name: Upload APK
-        if: success()
+        if: ${{ success() }}
         uses: actions/upload-artifact@v4
         with:
           name: LT-Music-APK
           path: bin/*.apk
           if-no-files-found: error
+          retention-days: 14
